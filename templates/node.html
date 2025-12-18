@@ -95,6 +95,55 @@
       {% else %}
         <div class="prose prose-invert max-w-none">{{ content | safe }}</div>
       {% endif %}
+      {% if meta.type == 'company' %}
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <i class="lucide lucide-building text-emerald-400"></i>
+            <div class="font-semibold">Площадки компании</div>
+          </div>
+          <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {% for dc in children | selectattr('type', 'equalto', 'dc') %}
+              <a href="/view/{{ dc.path }}" class="bg-slate-800 border border-slate-700 rounded p-3 hover:border-emerald-500">
+                <div class="flex items-center gap-2">
+                  <i class="lucide lucide-server text-emerald-400"></i>
+                  <div>
+                    <div class="font-semibold">{{ dc.title }}</div>
+                    <div class="text-xs text-gray-400">{{ dc.type }}</div>
+                  </div>
+                </div>
+              </a>
+            {% else %}
+              <div class="text-sm text-gray-500">Нет площадок. Создайте первый DC.</div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+      {% if meta.type == 'dc' %}
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i class="lucide lucide-server text-emerald-400"></i>
+              <div class="font-semibold">Содержимое площадки</div>
+            </div>
+            <button onclick="openCreateWithParent('{{ path }}')" class="px-3 py-2 rounded bg-slate-800 border border-slate-700 text-sm flex items-center gap-2">
+              <i class="lucide lucide-plus"></i> Создать узел
+            </button>
+          </div>
+          <div class="space-y-2">
+            {% for child in children %}
+              <a href="/view/{{ child.path }}" class="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded px-3 py-2 hover:border-emerald-500">
+                <i class="lucide {{ icon_for(child.type) }} text-emerald-400"></i>
+                <div>
+                  <div class="font-semibold">{{ child.title }}</div>
+                  <div class="text-xs text-gray-400">{{ child.type }}</div>
+                </div>
+              </a>
+            {% else %}
+              <div class="text-sm text-gray-500">Внутри пока пусто — добавьте разделы или объекты.</div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
       {% if auto_overview %}
         <div class="space-y-2">
           <div class="text-sm text-gray-400">Дочерние узлы</div>
