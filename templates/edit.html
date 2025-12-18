@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="space-y-4">
+  <div class="flex items-center justify-between">
+    <div>
+      <div class="text-sm text-gray-400">Редактирование</div>
+      <h1 class="text-xl font-semibold">{{ meta.title }} · {{ file }}</h1>
+    </div>
+    <a href="/view/{{ path }}" class="text-sm text-emerald-400 flex items-center gap-2"><i class="lucide lucide-corner-up-left"></i>К просмотру</a>
+  </div>
+  <div class="grid lg:grid-cols-2 gap-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-lg p-4">
+      <div class="flex items-center justify-between mb-3">
+        <div class="font-semibold">Markdown</div>
+        {% if meta.type == 'service' %}
+          <div class="text-xs text-gray-400">Файлы вкладок сервиса</div>
+        {% endif %}
+      </div>
+      <textarea id="editor" class="w-full h-[70vh] bg-slate-950 text-gray-100 border border-slate-800 rounded p-3" spellcheck="false">{{ content }}</textarea>
+      <div class="flex justify-between items-center mt-3">
+        <select id="file-picker" class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm">
+          {% if meta.type == 'service' %}
+            {% for name, label in service_files.items() %}
+              <option value="{{ name }}" {% if file == name %}selected{% endif %}>{{ label }} ({{ name }})</option>
+            {% endfor %}
+          {% else %}
+            <option value="index.md">index.md</option>
+          {% endif %}
+        </select>
+        <button id="save" class="px-4 py-2 bg-emerald-500 text-slate-900 rounded font-semibold text-sm">Сохранить</button>
+      </div>
+    </div>
+    <div class="bg-slate-900 border border-slate-800 rounded-lg p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <i class="lucide lucide-eye text-emerald-400"></i>
+        <div class="font-semibold">Предпросмотр</div>
+      </div>
+      <div id="preview" class="prose prose-invert max-w-none text-gray-100"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/markdown/markdown.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/material-darker.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+  const cm = CodeMirror.fromTextArea(document.getElementById('editor'), {
+    lineNumbers: true,
+    mode: 'markdown',
+    theme: 'material-darker',
+  });
+  const preview = document.getElementById('preview');
+  function updatePreview() {
+    preview.innerHTML = marked.parse(cm.getValue());
+  }
+  cm.on('change', updatePreview);
+  updatePreview();
+
+  const saveBtn = document.getElementById('save');
+  saveBtn.addEventListener('click', async () => {
+    const file = document.getElementById('file-picker').value;
+    const res = await fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: '{{ path }}', file, content: cm.getValue() })
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      alert(payload.error || 'Ошибка сохранения');
+      return;
+    }
+    window.location.href = `/view/{{ path }}${file !== 'index.md' ? '?tab=' + file.replace('.md','') : ''}`;
+  });
+</script>
+{% endblock %}

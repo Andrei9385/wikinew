@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-slate-900 border border-slate-800 rounded-lg p-6 text-center space-y-3">
+  <div class="text-2xl font-semibold text-red-400">Ошибка {{ status_code }}</div>
+  <div class="text-sm text-gray-300">{{ message }}</div>
+  <a href="/" class="text-emerald-400 text-sm">На главную</a>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="space-y-4">
+  <div class="flex items-center justify-between">
+    <div>
+      <div class="text-sm text-gray-400">Поиск</div>
+      <h1 class="text-xl font-semibold">{{ query }}</h1>
+    </div>
+  </div>
+  <div class="bg-slate-900 border border-slate-800 rounded-lg divide-y divide-slate-800">
+    {% for item in results %}
+      <a href="/view/{{ item.path }}" class="block px-4 py-3 hover:bg-slate-800">
+        <div class="font-semibold">{{ item.title }}</div>
+        <div class="text-xs text-gray-400">{{ item.type }} · {{ item.path }}</div>
+      </a>
+    {% else %}
+      <div class="px-4 py-6 text-sm text-gray-400">Ничего не найдено.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

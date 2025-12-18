@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-2 text-sm text-gray-400">
+      <a href="/" class="hover:text-white">Главная</a>
+      {% for c in crumb %}
+        <span>/</span>
+        <a href="/view/{{ c.path }}" class="hover:text-white">{{ c.title }}</a>
+      {% endfor %}
+    </div>
+    <div class="flex gap-2">
+      <a href="/edit/{{ path }}{% if meta.type == 'service' %}?file={{ active_file }}{% endif %}" class="px-3 py-2 rounded bg-slate-800 border border-slate-700 text-sm flex items-center gap-2">
+        <i class="lucide lucide-pencil"></i> Редактировать
+      </a>
+    </div>
+  </div>
+
+  <div class="bg-slate-900 border border-slate-800 rounded-lg p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <div class="text-sm text-gray-400 uppercase">{{ meta.type }}</div>
+        <h1 class="text-2xl font-semibold flex items-center gap-2"><i class="lucide {{ icon_for(meta.type) }} text-emerald-400"></i>{{ meta.title }}</h1>
+        <div class="text-xs text-gray-500">Slug: {{ meta.slug }} · Обновлено: {{ meta.updated }}</div>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="openCreateWithParent('{{ path }}')" class="px-3 py-2 rounded bg-emerald-500 text-slate-900 font-semibold text-sm flex items-center gap-2"><i class="lucide lucide-plus"></i>Создать</button>
+      </div>
+    </div>
+  </div>
+
+  {% if meta.type == 'service' %}
+    <div class="bg-slate-900 border border-slate-800 rounded-lg">
+      <div class="flex flex-wrap border-b border-slate-800">
+        {% for file, label in service_files.items() %}
+          {% set tab = file.replace('.md','') %}
+          <a href="/view/{{ path }}?tab={{ tab }}" class="px-4 py-2 text-sm border-b-2 {% if active_file == file %}border-emerald-500 text-white{% else %}border-transparent text-gray-400 hover:text-white{% endif %}">{{ label }}</a>
+        {% endfor %}
+      </div>
+      <div class="p-4 space-y-4">
+        {% if active_file == 'service-network.md' %}
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-semibold">Сеть сервиса</div>
+              <div class="text-xs text-gray-400">Укажите несколько записей</div>
+            </div>
+            <button id="add-row" class="px-3 py-2 rounded bg-slate-800 border border-slate-700 text-sm">Добавить строку</button>
+          </div>
+          <form id="network-form" class="space-y-2">
+            <input type="hidden" name="path" value="{{ path }}" />
+            <div class="grid grid-cols-5 gap-2 text-xs text-gray-400">
+              <span>Name</span><span>IP</span><span>Mask</span><span>Gateway</span><span>DNS</span>
+            </div>
+            <div id="network-rows" class="space-y-2">
+              {% for item in meta.get('service_network', {}).get('items', []) %}
+                <div class="grid grid-cols-5 gap-2">
+                  <input name="name" value="{{ item.name }}" class="input" />
+                  <input name="ip" value="{{ item.ip }}" class="input" />
+                  <input name="mask" value="{{ item.mask }}" class="input" />
+                  <input name="gateway" value="{{ item.gateway }}" class="input" />
+                  <input name="dns" value="{{ item.dns }}" class="input" />
+                </div>
+              {% endfor %}
+              {% if meta.get('service_network', {}).get('items', [])|length == 0 %}
+                <div class="grid grid-cols-5 gap-2">
+                  <input name="name" placeholder="Имя" class="input" />
+                  <input name="ip" placeholder="10.0.0.10" class="input" />
+                  <input name="mask" placeholder="255.255.255.0" class="input" />
+                  <input name="gateway" placeholder="10.0.0.1" class="input" />
+                  <input name="dns" placeholder="1.1.1.1" class="input" />
+                </div>
+              {% endif %}
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+              <button type="button" id="save-network" class="px-3 py-2 rounded bg-emerald-500 text-slate-900 text-sm font-semibold">Сохранить</button>
+            </div>
+          </form>
+          <div class="prose prose-invert max-w-none">
+            {{ content | safe }}
+          </div>
+        {% else %}
+          <div class="prose prose-invert max-w-none">
+            {{ content | safe }}
+          </div>
+          {% if not raw_content.strip() %}
+            <div class="bg-slate-800 border border-slate-700 rounded p-3 text-sm text-gray-300">Содержимое пусто — добавьте описание сервиса.</div>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  {% else %}
+    <div class="bg-slate-900 border border-slate-800 rounded-lg p-4 space-y-4">
+      {% if auto_overview %}
+        <div class="bg-slate-800 border border-slate-700 rounded p-3 text-sm text-gray-300">Раздел пока пуст — сгенерирован обзор структуры. Нажмите «Создать контент», чтобы добавить markdown.</div>
+      {% else %}
+        <div class="prose prose-invert max-w-none">{{ content | safe }}</div>
+      {% endif %}
+      {% if auto_overview %}
+        <div class="space-y-2">
+          <div class="text-sm text-gray-400">Дочерние узлы</div>
+          <div class="grid md:grid-cols-2 gap-2">
+            {% for child in children %}
+              <a href="/view/{{ child.path }}" class="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded px-3 py-2 hover:border-emerald-500">
+                <i class="lucide {{ icon_for(child.type) }} text-emerald-400"></i>
+                <div>
+                  <div class="font-semibold">{{ child.title }}</div>
+                  <div class="text-xs text-gray-400">{{ child.type }}</div>
+                </div>
+              </a>
+            {% else %}
+              <div class="text-sm text-gray-500">Нет дочерних элементов.</div>
+            {% endfor %}
+          </div>
+          <a href="/edit/{{ path }}" class="inline-flex items-center gap-2 text-emerald-400 text-sm">Создать контент<i class="lucide lucide-arrow-right"></i></a>
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-lg p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <i class="lucide lucide-folder-tree text-emerald-400"></i>
+        <div class="font-semibold">Дочерние узлы</div>
+      </div>
+      <div class="space-y-2">
+        {% for child in children %}
+          <a href="/view/{{ child.path }}" class="flex items-center gap-2 px-3 py-2 rounded hover:bg-slate-800">
+            <i class="lucide {{ icon_for(child.type) }} text-emerald-400"></i>
+            <div>
+              <div class="font-semibold">{{ child.title }}</div>
+              <div class="text-xs text-gray-400">{{ child.type }}</div>
+            </div>
+          </a>
+        {% else %}
+          <div class="text-sm text-gray-500">Нет дочерних элементов.</div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="bg-slate-900 border border-slate-800 rounded-lg p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <i class="lucide lucide-paperclip text-emerald-400"></i>
+        <div class="font-semibold">Вложения</div>
+      </div>
+      <form id="upload-form" class="flex items-center gap-2" enctype="multipart/form-data">
+        <input type="hidden" name="path" value="{{ path }}" />
+        <input type="file" name="file" class="flex-1 text-sm" />
+        <button class="px-3 py-2 rounded bg-slate-800 border border-slate-700 text-sm">Загрузить</button>
+      </form>
+      <ul class="mt-3 space-y-1 text-sm">
+        {% for item in assets %}
+          <li><a class="text-emerald-400" href="/files/{{ path }}/assets/{{ item }}" target="_blank">{{ item }}</a></li>
+        {% else %}
+          <li class="text-gray-500">Пока нет вложений.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function openCreateWithParent(p) {
+    const picker = document.getElementById('parent-picker');
+    if (picker) {
+      picker.value = p;
+    }
+    const btn = document.getElementById('open-create');
+    if (btn) btn.click();
+  }
+
+  const uploadForm = document.getElementById('upload-form');
+  if (uploadForm) {
+    uploadForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(uploadForm);
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        alert(payload.error || 'Ошибка загрузки');
+        return;
+      }
+      window.location.reload();
+    });
+  }
+
+  const addRow = document.getElementById('add-row');
+  const rows = document.getElementById('network-rows');
+  const saveNetwork = document.getElementById('save-network');
+  if (addRow && rows) {
+    addRow.addEventListener('click', () => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'grid grid-cols-5 gap-2';
+      wrapper.innerHTML = `
+        <input name="name" placeholder="Имя" class="input" />
+        <input name="ip" placeholder="10.0.0.10" class="input" />
+        <input name="mask" placeholder="255.255.255.0" class="input" />
+        <input name="gateway" placeholder="10.0.0.1" class="input" />
+        <input name="dns" placeholder="1.1.1.1" class="input" />
+      `;
+      rows.appendChild(wrapper);
+    });
+  }
+
+  if (saveNetwork && rows) {
+    saveNetwork.addEventListener('click', async () => {
+      const items = [];
+      rows.querySelectorAll('.grid').forEach(row => {
+        const [name, ip, mask, gateway, dns] = row.querySelectorAll('input');
+        if ([name.value, ip.value, mask.value, gateway.value, dns.value].some(v => v.trim() !== '')) {
+          items.push({ name: name.value, ip: ip.value, mask: mask.value, gateway: gateway.value, dns: dns.value });
+        }
+      });
+      const res = await fetch('/api/service-network/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: '{{ path }}', items })
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        alert(payload.error || 'Не удалось сохранить');
+        return;
+      }
+      window.location.reload();
+    });
+  }
+</script>
+{% endblock %}
